@@ -20,14 +20,14 @@
     <button type="button" class="btn"
             ng-class="{true: 'btn-orientation-northup', false: 'btn-orientation-headup'}[orientation]"
             ng-click="setOrientation()" title="Orientation"></button>
-    <button type="button" class="btn btn-position" ui-sref="mapload" title="Position"></button>
+    <button type="button" class="btn btn-position" ng-click="currentPosition()" title="Position"></button>
 
     <!--
     <button type="button" class="btn btn-settings" ui-sref="welcome" title="Welcome"></button>
     <button type="button" class="btn btn-settings" ui-sref="mapload" title="Map Load"></button>
     <button type="button" class="btn btn-settings" ng-click="say()" title="Speech Synthesis"></button>
-    -->
     <button type="button" class="btn btn-settings" ng-click="getOrientation()" title="Send NXE"></button>
+    -->
 
     <!-- Bottom controls (e.g. for particular location) -->
     <button type="button" class="btn btn-favorites" ng-style="locationControls" title="Add to favorites"></button>

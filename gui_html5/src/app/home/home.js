@@ -127,6 +127,12 @@ angular.module( 'navitGui.home', [
         }
     };
 
+    /**
+     * Change how map is displayed
+     * Posiible toggle horth-up or head-up
+     *
+     * @returns {undefined}
+     */
     $scope.setOrientation = function () {
         $log.log("HomeCtrl::setOrientation::before nxe call");
         var orientation = $rootScope.orientation === true ? 0 : -1;
@@ -156,6 +162,77 @@ angular.module( 'navitGui.home', [
 
             }
         );
+    };
+
+    /**
+     * Renders a map with current position of the car
+     *
+     * @returns {undefined}
+     */
+    $scope.currentPosition = function () {
+        $log.log("HomeCtrl::currentPosition::position::before nxe call");
+        var promise = guinxe.get({
+                id: 1,
+                call: "position"
+            });
+
+        promise.then(
+            function (response) {
+                if (response.data) {
+                    $log.log("HomeCtrl::currentPosition::success");
+                    $log.log(response.data);
+
+                    return response.data;
+                }
+            },
+            function (reason) {
+                $log.log("HomeCtrl::Error while get position::"+reason);
+            }
+        )
+        // for now navit doesn't handle many request well we need to chain our requests somehow
+        .then(function (data) {
+            $log.log("HomeCtrl::currentPosition::chaining setCenter");
+            $scope.setCenter(data.latitude, data.longitude);
+        });
+    };
+
+    /**
+     * Displays a map with car position at center of the map.
+     *
+     * @param {type} latitude
+     * @param {type} longitude
+     * @returns {undefined}
+     */
+    $scope.setCenter = function (latitude, longitude) {
+        $log.log("latitude=", latitude);
+        $log.log("longitude=", longitude);
+        $log.log("HomeCtrl::setCenter::before nxe call");
+        var promise = guinxe.call({
+                id: 2,
+                call: "setCenter",
+                data: {
+                    longitude : latitude,
+                    latitude : longitude
+                }
+            });
+
+        promise.then(
+            function (response) {
+                if (response.image) {
+                    $log.log("HomeCtrl::setCenter::success (image)");
+                    // invoke map service
+                    map.render(response.data);
+                }
+            },
+            function (reason) {
+                $log.log("HomeCtrl::Error while setCenter::"+reason);
+            },
+            function (response) {
+                // here we can change orientation icon
+                $log.log("HomeCtrl::setCenter::notify (json) skipping", response);
+            }
+        );
+
     };
 
     // hide or show location controls if in home.location state
