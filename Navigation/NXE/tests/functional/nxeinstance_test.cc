@@ -190,3 +190,39 @@ TEST_F(NXEInstanceTest, DISABLED_downloadMessage_correct_country)
     instance.HandleMessage(TestUtils::cancelDownloadMessage("Hawaii"));
 
 }
+
+TEST_F(NXEInstanceTest, testMessage)
+{
+
+    struct POI {
+        const std::string name;
+        NXE::Position position;
+    };
+
+    boost::property_tree::ptree options;
+    boost::property_tree::ptree gChild;
+
+    std::list<POI> somePois {{"test"}, {"anotherPOI"}};
+    std::vector<boost::property_tree::ptree> children;
+
+    std::for_each(somePois.begin(), somePois.end(), [&options, &children](const POI& val) {
+        boost::property_tree::ptree childTree;
+        childTree.add("name", val.name);
+        childTree.add("lon", val.position.longitude);
+        childTree.add("lat", val.position.latitude);
+        children.push_back(childTree);
+    });
+
+    std::for_each(children.begin(), children.end(), [&gChild] (const boost::property_tree::ptree& pt) {
+        gChild.push_back(std::make_pair("", pt));
+    });
+
+    options.add_child("Pois", gChild);
+
+    NXE::JSONMessage msg {0, "testMessage", "", options};
+
+    nDebug() << " Message= " << JSONUtils::serialize(msg);
+
+    instance.HandleMessage(msg);
+
+}

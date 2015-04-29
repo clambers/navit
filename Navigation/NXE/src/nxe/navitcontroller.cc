@@ -49,7 +49,8 @@ struct NavitControllerPrivate {
         boost::fusion::make_pair<SetDestinationMessage>("setDestination"),
         boost::fusion::make_pair<ClearDestinationMessage>("clearDestination"),
         boost::fusion::make_pair<SetPositionMessage>("setPosition"),
-        boost::fusion::make_pair<SetScheme>("setScheme")
+        boost::fusion::make_pair<SetScheme>("setScheme"),
+        boost::fusion::make_pair<TestMessage>("testMessage")
     };
 
     map_cb_type cb{
@@ -202,6 +203,15 @@ struct NavitControllerPrivate {
 
             JSONMessage response {message.id, message.call, "", message.data};
             successSignal(response);
+        }),
+
+        boost::fusion::make_pair<TestMessage>([this](const JSONMessage& message) {
+
+            auto pois = message.data.get_child("Pois");
+            for (const auto& kv : pois) {
+                nTrace() << " Poi name = " << kv.second.get<std::string>("name");
+            };
+
         }),
 
     };
