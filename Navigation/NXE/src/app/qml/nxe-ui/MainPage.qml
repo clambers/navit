@@ -42,7 +42,7 @@ Item {
         }
 
         locationName: navitProxy.currentlySelectedItem !== null ?
-                          navitProxy.currentlySelectedItem.name : "";
+                          navitProxy.currentlySelectedItem.itemText : "";
         isFavorite: navitProxy.currentlySelectedItem !== null ?
                           navitProxy.currentlySelectedItem.favorite : "";
         height: 200

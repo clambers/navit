@@ -4,9 +4,8 @@ import '..'
 QtObject {
     id: navitProxy
     // real (c++ wise) properties
-    property bool ftu: true
+    property bool ftu: false
     property QtObject currentlySelectedItem: null
-    property ListModel searchResults: LocationsResultModel {}
     property ListModel favourites: ListModel {}
     property ListModel destinations: ListModel {}
 
@@ -45,7 +44,7 @@ QtObject {
 
     // fake properties
     property QtObject fakeLocationObject: QtObject {
-        property string name: "Plac Kościuszki"
+        property string itemText: "Plac Kościuszki"
         property bool favorite: false
     }
 

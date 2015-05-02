@@ -45,6 +45,7 @@ Rectangle {
         }
     }
 
+
     ListView {
         id: locationResultListView
         height: 800
@@ -56,7 +57,7 @@ Rectangle {
         anchors.leftMargin: 0
         anchors.topMargin: queryBarEnabled ? 7 : 0
         anchors.bottomMargin: 0
-        model: navitProxy.searchResults
+        model: locationSearchResult
         clip: true
         delegate: LocationsResultDelegate {
             width: parent.width
