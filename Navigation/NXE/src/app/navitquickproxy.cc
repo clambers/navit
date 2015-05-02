@@ -118,9 +118,6 @@ void NavitQuickProxy::setFtu(bool value)
 
 QObject *NavitQuickProxy::currentlySelectedItem() const
 {
-    if (m_searchResults.size() == 0)
-        return nullptr;
-    m_currentItem = qobject_cast<LocationProxy*>(m_searchResults.at(0));
     return m_currentItem;
 }
 
@@ -178,7 +175,6 @@ void NavitQuickProxy::search(const QString &name)
     m_searchResults.append(new LocationProxy{"test1", false, "", true});
 
     m_rootContext->setContextProperty("locationSearchResult", QVariant::fromValue(m_searchResults));
-    currentlySelectedItemChanged();
 
     emit searchDone();
 }
@@ -186,6 +182,11 @@ void NavitQuickProxy::search(const QString &name)
 void NavitQuickProxy::setLocationPopUp(const QString &name)
 {
     aFatal() << "Not implemented " << __PRETTY_FUNCTION__;
+    // TODO: This is a fake implementation for now
+    if (m_searchResults.size() != 0) {
+        m_currentItem = qobject_cast<LocationProxy*>(m_searchResults.at(0));
+        currentlySelectedItemChanged();
+    }
 }
 
 void NavitQuickProxy::synchronizeNavit()

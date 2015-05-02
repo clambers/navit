@@ -80,7 +80,7 @@ private:
     AppSettings m_settings;
     NavitMapsProxy mapsProxy;
     QObjectList m_searchResults;
-    mutable LocationProxy* m_currentItem;
+    LocationProxy* m_currentItem {nullptr};
 };
 
 #endif // NAVITQUICKPROXY_H
