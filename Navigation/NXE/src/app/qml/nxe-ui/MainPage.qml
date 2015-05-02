@@ -43,8 +43,13 @@ Item {
 
         locationName: navitProxy.currentlySelectedItem !== null ?
                           navitProxy.currentlySelectedItem.name : "";
-
+        isFavorite: navitProxy.currentlySelectedItem !== null ?
+                          navitProxy.currentlySelectedItem.favorite : "";
         height: 200
+
+        onFavoriteChanged: {
+            navitProxy.setFavorite(navitProxy.currentlySelectedItem.name, favorite);
+        }
     }
 
     Loader {

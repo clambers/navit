@@ -6,7 +6,9 @@ Item {
     property bool canNavigate: false
     property alias locationName: locationTitle.text
     width: 400
-    height: 205
+    height: 150
+
+    signal favoriteChanged(bool favorite)
 
     Item {
         id: item3
@@ -31,8 +33,8 @@ Item {
                     y: 0
                     width: 60
                     height: 75
-                    // onClicked: isFavorite = isFavorite ? false : true
-                    onClicked: isFavorite = !isFavorite
+                    onClicked: favoriteChanged(!isFavorite)
+
                     Image {
                         id: image1
                         x: 12
@@ -53,6 +55,10 @@ Item {
                     y: 75
                     width: 60
                     height: 75
+
+                    onClicked: {
+                        startNavigationButton.opacity = 1
+                    }
 
                     Image {
                         id: image2
@@ -95,6 +101,9 @@ Item {
                     height: 36
                     anchors.top: locationDescription.bottom
                     anchors.topMargin: 10
+                    opacity: 0
+
+                    Behavior on opacity { NumberAnimation {} }
 
                     Image {
                         id: blueBarImage
@@ -166,14 +175,5 @@ Item {
                 }
             }
         }
-    }
-
-    MapLocationToast {
-        id: mapLocationToast1
-        x: 0
-        y: 0
-        width: parent.width
-        anchors.bottom: item3.top
-        anchors.bottomMargin: 5
     }
 }

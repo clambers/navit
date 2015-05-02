@@ -56,8 +56,7 @@ Rectangle {
         anchors.leftMargin: 0
         anchors.topMargin: queryBarEnabled ? 7 : 0
         anchors.bottomMargin: 0
-        model: LocationsResultModel {
-        }
+        model: navitProxy.searchResults
         clip: true
         delegate: LocationsResultDelegate {
             width: parent.width
