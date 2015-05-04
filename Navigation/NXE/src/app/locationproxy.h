@@ -15,7 +15,7 @@ public:
 
     QString itemText() const {return _itemText;}
 
-    bool favorite() const {return _bolded;}
+    bool favorite() const {return _favorite;}
     void setFavorite( bool bFav);
 
     QString description() const {return _description;}

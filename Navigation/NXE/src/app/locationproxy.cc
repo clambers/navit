@@ -1,4 +1,5 @@
 #include "locationproxy.h"
+#include "alog.h"
 
 LocationProxy::LocationProxy(QString itemText, bool fav, QString desc, bool bolded, QObject *parent)
     : QObject(parent)
@@ -11,7 +12,9 @@ LocationProxy::LocationProxy(QString itemText, bool fav, QString desc, bool bold
 
 void LocationProxy::setFavorite(bool bFav)
 {
-
+    _favorite = bFav;
+    aTrace() << "Location " << _itemText.toStdString() << " favorite= " << (_favorite ? " fav " : " not fav ");
+    emit favoriteChanged();
 }
 
 void LocationProxy::setDescription(const QString &desc)

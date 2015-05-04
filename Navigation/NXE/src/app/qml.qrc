@@ -46,7 +46,6 @@
         <file>qml/nxe-ui/LocationsListView.qml</file>
         <file>qml/nxe-ui/LocationsResult.qml</file>
         <file>qml/nxe-ui/LocationsResultDelegate.qml</file>
-        <file>qml/nxe-ui/LocationsResultModel.qml</file>
         <file>qml/nxe-ui/LocationsSearch.qml</file>
         <file>qml/nxe-ui/LocationsView.qml</file>
         <file>qml/nxe-ui/MapLocationInfo.qml</file>

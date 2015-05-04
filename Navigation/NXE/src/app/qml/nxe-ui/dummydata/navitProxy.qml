@@ -1,5 +1,4 @@
 import QtQuick 2.0
-import '..'
 
 QtObject {
     id: navitProxy
@@ -46,6 +45,7 @@ QtObject {
     property QtObject fakeLocationObject: QtObject {
         property string itemText: "Plac Kościuszki"
         property bool favorite: false
+        property string description: "This is a description"
     }
 
     property Timer fakeSearchTimer: Timer {
