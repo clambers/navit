@@ -38,7 +38,6 @@ Item {
                 }
                 navitProxy.changeValueFor(settingsValue, optionText.text);
             } else if (type === 'sublist') {
-                console.debug('sublist clicked ', options.get(0).url)
                 subMenuRequested(options.get(0).url);
             }
             else if (type === 'popup') {

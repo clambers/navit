@@ -11,6 +11,7 @@ Rectangle {
 
     property variant mapsToDownload: []
     property int count: 0
+    property string customHeader: mapsType === 'suggested' ? "Recommended" : "Earth"
 
     // by default we're using suggested country model
     property var listModel: CLSuggestedCountriesModel {}

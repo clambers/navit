@@ -23,7 +23,6 @@ Rectangle {
             id: settingsHeaderItem
             width: parent.width
             height: 50
-            header: "Settings"
             stack: settingsStackView
         }
 
@@ -33,11 +32,19 @@ Rectangle {
                 if (ftu) {
                     settingsStackView.push(Qt.resolvedUrl("CountryLanguage.qml"))
                     settingsHeaderItem.isHeaderEnabled = false;
-                } else {
                 }
             }
 
+            onCurrentItemChanged: {
+                if (currentItem && currentItem.customHeader) {
+                    console.debug(currentItem, currentItem.customHeader)
+                    settingsHeaderItem.header = currentItem.customHeader
+                }
+            }
+
+
             initialItem: Item {
+                property string customHeader: "Settings"
                 width: parent.width
                 height: parent.height - 100
 
