@@ -8,6 +8,7 @@ QtObject {
     property ListModel favourites: ListModel {}
     property ListModel destinations: ListModel {}
     property bool topBarLocationVisible : false
+    property int orientation: -1
     // Real functions
     function valueFor(settingName) {
         if (settingName === 'orientation') {
@@ -24,6 +25,10 @@ QtObject {
     }
 
     function searchCountry(searchString) {
+        fakeSearchTimer.start();
+    }
+
+    function searchCity() {
         fakeSearchTimer.start();
     }
 

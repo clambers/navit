@@ -4,8 +4,6 @@ import QtQuick.Controls.Styles 1.2
 
 Item {
     id: root
-    width: settingsListView.width
-    height: 50
     property int currentOption: 0
     property int maxOptions: options ? options.count : 0
 
@@ -80,11 +78,11 @@ Item {
                 anchors.fill: parent
 
                 NButton {
-                    width: 16
-                    height: 16
+                    width: 20
+                    height: parent.height
                     visible: type === "sublist"
                     anchors.right: parent.right
-                    anchors.verticalCenter: parent.verticalCenter
+                    anchors.rightMargin: 5
                     iconSource: "next_icon_white.png"
                     iconWidth: 16
                     iconHeight: 16
