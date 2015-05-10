@@ -14,10 +14,22 @@ Item {
     property alias iconHeight: imageItem.sourceSize.height
     property alias layout: rowLayout.layoutDirection
 
-    width: 100
     height: 60
 
+    function recalculateWidth() {
+        var w = buttonText.contentWidth + 5
+        if (iconVisible)
+            w += imageItem.width
+
+        root.width = w;
+        console.debug('Redcalculate ', text, iconSource, root.width ,buttonText.contentWidth)
+    }
+
     signal clicked
+
+    Component.onCompleted: {
+        recalculateWidth()
+    }
 
     Rectangle {
         visible: false
@@ -28,10 +40,10 @@ Item {
     Item {
         anchors.fill: parent
 
-        RowLayout {
+        Row {
             id: rowLayout
             anchors.fill: parent
-            spacing: text.length !== 0 ? 5 : 0
+            spacing: 5
 
             Text {
                 id: buttonText
@@ -42,18 +54,15 @@ Item {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
                 height: parent.height
+                onTextChanged: {
+                    recalculateWidth()
+                }
             }
 
-            Rectangle {
-                width: iconVisible ? 32 : 0
-                height: parent.height
-                color: "transparent"
+            Image {
+                id: imageItem
                 visible: iconVisible
-
-                Image {
-                    id: imageItem
-                    anchors.centerIn: parent
-                }
+                anchors.verticalCenter: parent.verticalCenter
             }
         }
     }

@@ -24,6 +24,7 @@ Rectangle {
             width: parent.width
             height: 50
             stack: settingsStackView
+            header: "Settings"
         }
 
         StackView {

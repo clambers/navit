@@ -15,7 +15,7 @@ Page {
     NDialog {
         id: dialogItem
         iconSource: "download_hex_icon.png"
-        bottomBarComponent: RowLayout {
+        bottomBarComponent: Row {
             width: dialogItem.width
             height: 60
             anchors.fill: parent
@@ -24,19 +24,18 @@ Page {
             spacing: 5
 
             Loader {
+                id: loaderItem
                 sourceComponent:  root.leftButton
-                width: 80
                 height: parent.height
             }
 
             Item {
+                width: parent.width - loaderItem.width - downloadButtonItem.width - 10
                 height: parent.height
-                width: 300
-                Layout.fillWidth: true
             }
 
             NButton {
-                width: 190
+                id: downloadButtonItem
                 text: "Download a map"
                 bold: true
                 iconSource: "next_icon_white.png"

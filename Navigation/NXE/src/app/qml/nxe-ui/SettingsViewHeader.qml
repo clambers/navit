@@ -17,14 +17,14 @@ Item {
         color: "black"
     }
 
-    RowLayout {
+    Row {
         anchors.fill: parent
         spacing: 0
 
-        MenuHeaderButton {
+        NButton {
             id: backButton
-            width: 120
             height: parent.height
+            width: 100
             iconSource: "back_icon_white_lg.png"
             iconWidth: 24
             iconHeight: 24
@@ -41,13 +41,14 @@ Item {
         }
 
         Item {
-            width: 30
+            width: parent.width - backButton.width - backButtonItem.width
             height: parent.height
             Layout.fillWidth: true
         }
 
         Item {
-            width: 60
+            id: backButtonItem
+            width: 50
             height: parent.height
 
             NButton {
@@ -61,7 +62,7 @@ Item {
 
             NButton {
                 id: mapBackButton
-                width: 34
+                width: 24
                 height: parent.height
                 iconWidth: 24
                 iconHeight: 24

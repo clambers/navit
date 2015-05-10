@@ -7,7 +7,7 @@ Page {
         id: dialogItem
         headerText: "Are you sure?"
         dialogText: "All saved maps, locations, destinations and settings will be removed"
-        bottomBarComponent: RowLayout {
+        bottomBarComponent: Row {
             width: dialogItem.width
             height: 60
             anchors.fill: parent
@@ -16,7 +16,7 @@ Page {
             spacing: 5
 
             NButton {
-                width: 100
+                id: cancelItem
                 text: "Cancel"
                 iconSource: "next_icon_white.png"
                 onClicked: rootStack.pop({
@@ -25,13 +25,12 @@ Page {
             }
 
             Item {
+                width: parent.width - factoryResetItem.width - cancelItem.width - 10
                 height: parent.height
-                width: 300
-                Layout.fillWidth: true
             }
 
             NButton {
-                width: 190
+                id: factoryResetItem
                 text: "Factory Reset Now"
                 iconSource: "next_icon_white.png"
                 onClicked: {
