@@ -19,8 +19,6 @@ Item {
 
     signal clicked
 
-    Component.onCompleted:  console.debug(iconSource)
-
     Rectangle {
         visible: false
         anchors.fill: parent
@@ -51,7 +49,6 @@ Item {
                 height: parent.height
                 color: "transparent"
                 visible: iconVisible
-                Component.onCompleted: console.debug(imageItem.source, visible, width)
 
                 Image {
                     id: imageItem

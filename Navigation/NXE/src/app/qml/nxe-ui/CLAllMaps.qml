@@ -19,7 +19,4 @@ Page {
             isDownloaded: downloaded
         }
     }
-    Component.onCompleted: {
-        console.debug(allMapsModel.length)
-    }
 }
