@@ -3,7 +3,7 @@ import QtQuick 2.0
 QtObject {
     id: navitProxy
     // real (c++ wise) properties
-    property bool ftu: false
+    property bool ftu: true
     property QtObject currentlySelectedItem: null
     property ListModel favourites: ListModel {}
     property ListModel destinations: ListModel {}

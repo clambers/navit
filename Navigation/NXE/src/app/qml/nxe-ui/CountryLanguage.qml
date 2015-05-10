@@ -115,7 +115,7 @@ Rectangle {
             name: "noDialog"
             AnchorChanges {
                 target: dialog
-                anchors.top: root.bottom
+                anchors.top: list.bottom
                 anchors.bottom: undefined
             }
         },
@@ -123,7 +123,7 @@ Rectangle {
             name: "dialog"
             AnchorChanges {
                 target: dialog
-                anchors.bottom: root.bottom
+                anchors.bottom: list.bottom
                 anchors.top: undefined
             }
         }
