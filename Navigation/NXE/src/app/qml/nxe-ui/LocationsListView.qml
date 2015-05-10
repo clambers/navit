@@ -7,8 +7,6 @@ ListView {
 
     delegate: SettingsListDelegate {
         // TODO: Not ready yet
-        width: locationsListView.width
-        height: 50
         onSubMenuRequested: subMenuRequest(url)
     }
 }

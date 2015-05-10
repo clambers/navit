@@ -8,7 +8,6 @@ QtObject {
     property ListModel favourites: ListModel {}
     property ListModel destinations: ListModel {}
     property bool topBarLocationVisible : false
-    property int orientation: -1
     // Real functions
     function valueFor(settingName) {
         if (settingName === 'orientation') {
@@ -28,10 +27,6 @@ QtObject {
         fakeSearchTimer.start();
     }
 
-    function searchCity() {
-        fakeSearchTimer.start();
-    }
-
     function getHistory() {
         fakeHistoryTimer.start();
     }
@@ -48,9 +43,8 @@ QtObject {
         currentlySelectedItem = fakeLocationObject;
     }
 
-    function showTopBar() {
-
-        topBarLocationVisible = true;
+    function setTopBarVisibility(value) {
+            topBarLocationVisible = value;
     }
 
     function hideLocationBars() {
