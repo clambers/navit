@@ -78,6 +78,7 @@ public:
 
     virtual void setCenter(double longitude, double latitude) = 0;
     virtual void setDestination(double longitude, double latitude, const std::string& description) = 0;
+    virtual bool isNavigationRunning() = 0;
     virtual void setPosition(double longitude, double latitude) = 0;
     virtual void setPositionByInt(int x, int y) = 0;
     virtual void clearDestination() = 0;
@@ -92,6 +93,9 @@ public:
     virtual SearchResults search(SearchType type, const std::string& searchString) = 0;
     virtual void selectSearchResult(SearchType type, std::int32_t id)  = 0;
     virtual void finishSearch() = 0;
+
+    virtual std::int32_t distance() = 0;
+    virtual std::int32_t eta() = 0;
 
     // Signals from IPC
     virtual SpeechSignalType& speechSignal() = 0;

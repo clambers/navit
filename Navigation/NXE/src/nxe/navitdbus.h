@@ -25,6 +25,7 @@ public:
     virtual void setOrientation(int newOrientation) override;
     virtual void setCenter(double longitude, double latitude) override;
     virtual void setDestination(double longitude, double latitude, const std::string& description) override;
+    virtual bool isNavigationRunning() override;
     virtual void setPosition(double longitude, double latitude) override;
     virtual void setPositionByInt(int x, int y) override;
     virtual void clearDestination() override;
@@ -39,6 +40,8 @@ public:
     virtual SearchResults search(SearchType type, const std::string& searchString) override;
     virtual void selectSearchResult(SearchType type, std::int32_t id) override;
     virtual void finishSearch() override;
+    virtual std::int32_t distance() override;
+    virtual std::int32_t eta() override;
 
     virtual SpeechSignalType& speechSignal() override;
     virtual PointClickedSignalType& pointClickedSignal() override;

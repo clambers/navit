@@ -23,13 +23,16 @@ class NavitQuickProxy : public QObject
     Q_OBJECT
     Q_PROPERTY(int orientation READ orientation WRITE setOrientation NOTIFY orientationChanged)
     Q_PROPERTY(QString version READ version CONSTANT)
-    Q_PROPERTY(QString position READ position NOTIFY positionChanged)
     Q_PROPERTY(bool enablePoi READ enablePoi WRITE setEnablePoi NOTIFY enablePoiChanged)
     Q_PROPERTY(bool ftu READ ftu WRITE setFtu NOTIFY ftuChanged)
     Q_PROPERTY(QObject* currentlySelectedItem READ currentlySelectedItem NOTIFY currentlySelectedItemChanged)
+    Q_PROPERTY(bool navigation READ navigation WRITE setNavigation NOTIFY navigationChanged)
+    Q_PROPERTY(int distanceToDestination READ distanceToDestination NOTIFY distanceToDestinationChanged)
+    Q_PROPERTY(int eta READ eta NOTIFY etaChanged)
 
 public:
-    explicit NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QObject *parent = 0);
+    NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QObject *parent = 0);
+    ~NavitQuickProxy();
 
     int orientation();
     void setOrientation(int);
@@ -48,9 +51,15 @@ public:
 
     void resize(const QRect& rect);
 
+    // Navigation API
+    void setNavigation(bool start);
+    bool navigation();
+
+    int distanceToDestination() const { return m_distance;}
+    int eta() { return m_eta;}
+
 signals:
     void orientationChanged();
-    void positionChanged();
     void enablePoiChanged();
     void ftuChanged();
 
@@ -61,12 +70,12 @@ signals:
     void currentlySelectedItemChanged();
     void topBarLocationVisibleChanged();
 
-    void pointClicked(LocationProxy* location);
-
     // Navigation
-    void navigationStarted();
-    void navigationStopped();
-    void navigationManuver(const QString& manuver);
+    void navigationChanged();
+    void navigationManuver(const QString& manuverDescription);
+
+    void distanceToDestinationChanged();
+    void etaChanged();
 
 public slots:
     void render();
@@ -92,9 +101,6 @@ public slots:
     void getHistory();
     void setLocationPopUp(const QUuid& id);
 
-    // Navigation API
-    void startNavigation();
-    void cancelNavigation();
 
     void setZoom(int newZoom);
 
@@ -106,7 +112,6 @@ private:
     std::shared_ptr<Context> context;
     std::shared_ptr<NXE::NXEInstance> nxeInstance;
     QQmlContext* m_rootContext;
-    QString m_position;
     AppSettings m_settings;
     NavitMapsProxy mapsProxy;
     QObjectList m_countriesSearchResults;
@@ -116,6 +121,8 @@ private:
     QObjectList m_favoritesResults;
     QObjectList m_historyResults;
     QScopedPointer<LocationProxy> m_currentItem;
+    int m_distance;
+    int m_eta;
 };
 
 #endif // NAVITQUICKPROXY_H

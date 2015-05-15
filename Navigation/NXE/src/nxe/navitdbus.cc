@@ -18,6 +18,9 @@ const std::string navitDBusInterface = "org.navit_project.navit.navit";
 const std::string rootNavitDBusInterface = "org.navit_project.navit";
 const std::string searchNavitDBusInterface = "org.navit_project.navit.search_list";
 
+const std::string routeNavitDBusPath = "/org/navit_project/navit/default_navit/default_route";
+const std::string routeNavitDBusInterface = "org.navit_project.navit.route";
+
 std::string convert(NXE::INavitIPC::SearchType type)
 {
     std::string tag;
@@ -128,7 +131,6 @@ struct NavitDBusObjectProxy : public ::DBus::InterfaceProxy, public ::DBus::Obje
 
         }) != res.end();
 
-
         bool isPointClicked = std::find_if(res.begin(), res.end(), [](const std::pair<std::string, ::DBus::Variant>& val) -> bool {
             return val.first == "click_coord_geo";
         }) != res.end();
@@ -144,7 +146,8 @@ struct NavitDBusObjectProxy : public ::DBus::InterfaceProxy, public ::DBus::Obje
                 nDebug() << " I have to say " << data;
                 speechSignal(data);
             }
-        } else if (isRoutingSignal) {
+        }
+        else if (isRoutingSignal) {
             nTrace() << "Routing signal!";
             auto dataIter = std::find_if(res.begin(), res.end(), [](const std::pair<std::string, ::DBus::Variant>& val) -> bool {
                 return val.first == "data";
@@ -221,6 +224,14 @@ struct NavitSearchObjectProxy : public ::DBus::InterfaceProxy, public ::DBus::Ob
     }
 };
 
+struct NavitRouteObjectProxy : public DBus::InterfaceProxy, public DBus::ObjectProxy {
+    NavitRouteObjectProxy(DBus::Connection& con)
+        : DBus::InterfaceProxy(routeNavitDBusInterface)
+        , DBus::ObjectProxy(con, routeNavitDBusPath, navitDBusDestination.c_str())
+    {
+    }
+};
+
 struct NavitDBusPrivate {
     NavitDBusPrivate(::DBus::Connection& _con)
         : con(_con)
@@ -245,7 +256,9 @@ struct NavitDBusPrivate {
     std::shared_ptr<NavitDBusObjectProxy> object;
     std::shared_ptr<NavitDBusObjectProxy> rootObject;
     std::shared_ptr<NavitSearchObjectProxy> searchObject;
+    std::shared_ptr<NavitRouteObjectProxy> routeObject;
     DBus::Connection& con;
+    bool navigationRunning{ false };
 };
 
 NavitDBus::NavitDBus(DBusController& ctrl)
@@ -254,6 +267,7 @@ NavitDBus::NavitDBus(DBusController& ctrl)
     nTrace() << "NavitDBus::NavitDBus()";
     d->object.reset(new NavitDBusObjectProxy(navitDBusInterface, ctrl.connection()));
     d->rootObject.reset(new NavitDBusObjectProxy(rootNavitDBusInterface, ctrl.connection()));
+    d->routeObject.reset(new NavitRouteObjectProxy(ctrl.connection()));
 }
 
 NavitDBus::~NavitDBus()
@@ -340,7 +354,17 @@ void NavitDBus::setDestination(double longitude, double latitude, const std::str
     auto format = boost::format("geo: %1% %2%") % longitude % latitude;
     const std::string message = format.str();
 
-    DBusHelpers::callNoReply("set_destination", *(d->object.get()), message, description);
+    try {
+        DBusHelpers::callNoReply("set_destination", *(d->object.get()), message, description);
+        d->navigationRunning = true;
+    } catch(const std::exception& ex) {
+        nError() << "Error " << ex.what();
+    }
+}
+
+bool NavitDBus::isNavigationRunning()
+{
+    return d->navigationRunning;
 }
 
 void NavitDBus::setPosition(double longitude, double latitude)
@@ -378,6 +402,7 @@ void NavitDBus::clearDestination()
 {
     DebugDBusCall db{ "clear_destination" };
     DBusHelpers::callNoReply("clear_destination", *(d->object.get()));
+    d->navigationRunning = false;
 }
 
 void NavitDBus::setScheme(const std::string& scheme)
@@ -408,10 +433,10 @@ void NavitDBus::searchPOIs(double longitude, double latitude, int dist)
 Position NavitDBus::currentCenter()
 {
     nInfo() << "Current center";
-    auto ret = DBusHelpers::getAttr<DBus::Struct<double,double>>("center", *(d->object.get()));
+    auto ret = DBusHelpers::getAttr<DBus::Struct<double, double> >("center", *(d->object.get()));
     nInfo() << "Current center " << ret._1 << ret._2;
 
-    return NXE::Position{ret._1, ret._2};
+    return NXE::Position{ ret._1, ret._2 };
 }
 
 void NavitDBus::startSearch()
@@ -445,7 +470,7 @@ SearchResults NavitDBus::search(INavitIPC::SearchType type, const std::string& s
             DBus::MessageIter resultsIter{ results.reader() };
 
             std::int32_t resultId;
-            DBus::Struct<double,double> position;
+            DBus::Struct<double, double> position;
             typedef std::map<std::string, std::map<std::string, ::DBus::Variant> > LocationDBusType;
             LocationDBusType at;
             double lat, lon;
@@ -509,17 +534,17 @@ SearchResults NavitDBus::search(INavitIPC::SearchType type, const std::string& s
 
             if (type == INavitIPC::SearchType::Country) {
                 // decode country
-                ret.emplace_back(SearchResult{ resultId, std::make_pair(lon,lat), decodeCountry(at) });
+                ret.emplace_back(SearchResult{ resultId, std::make_pair(lon, lat), decodeCountry(at) });
                 nDebug() << "Country = " << ret.back().country.name;
             }
             else if (type == INavitIPC::SearchType::City) {
-                ret.emplace_back(SearchResult{ resultId, std::make_pair(lon,lat), decodeCountry(at), decodeCity(at) });
+                ret.emplace_back(SearchResult{ resultId, std::make_pair(lon, lat), decodeCountry(at), decodeCity(at) });
                 nDebug() << "Country = " << ret.back().country.name << " City = " << ret.back().city.name;
             }
             else if (type == INavitIPC::SearchType::Street) {
                 ret.emplace_back(SearchResult{
                     resultId,
-                    std::make_pair(lon,lat),
+                    std::make_pair(lon, lat),
                     decodeCountry(at),
                     decodeCity(at),
                     decodeStreet(at) });
@@ -529,7 +554,7 @@ SearchResults NavitDBus::search(INavitIPC::SearchType type, const std::string& s
             else if (type == INavitIPC::SearchType::Address) {
                 ret.emplace_back(SearchResult{
                     resultId,
-                    std::make_pair(lon,lat),
+                    std::make_pair(lon, lat),
                     decodeCountry(at),
                     decodeCity(at),
                     decodeStreet(at),
@@ -568,6 +593,23 @@ void NavitDBus::finishSearch()
     d->searchObject.reset();
 }
 
+std::int32_t NavitDBus::distance()
+{
+    nTrace() << "getting distance";
+    int distance = DBusHelpers::getAttr<int>("destination_length", *(d->routeObject.get()));
+    nInfo() << "Current distance " << distance;
+
+    return distance;
+}
+
+std::int32_t NavitDBus::eta()
+{
+    int eta = DBusHelpers::getAttr<int>("destination_time", *(d->routeObject.get()));
+    nInfo() << "Current eta= " << eta;
+
+    return eta;
+}
+
 INavitIPC::SpeechSignalType& NavitDBus::speechSignal()
 {
     assert(d && d->object);
@@ -585,7 +627,7 @@ INavitIPC::InitializedSignalType& NavitDBus::initializedSignal()
     return d->object->initializedSignal;
 }
 
-INavitIPC::RoutingSignalType &NavitDBus::routingSignal()
+INavitIPC::RoutingSignalType& NavitDBus::routingSignal()
 {
     return d->object->routingSignal;
 }

@@ -12,9 +12,9 @@
 #include <string>
 #include <iostream>
 #include <iomanip>
+#include <thread>
 
 using namespace std;
-using namespace boost::fusion;
 
 namespace NXE {
 
@@ -44,7 +44,10 @@ struct NXEInstancePrivate {
     std::pair<int, int> geometry;
     Settings settings;
     bool initialized{ false };
-    bool mute {false};
+    bool mute{ false };
+    std::thread distanceThread;
+    bool distanceThreadShouldRun{ false };
+    std::function<void(std::int32_t, std::int32_t)> distanceCallback;
 
     void setOrientation(int newOrientation)
     {
@@ -87,6 +90,35 @@ struct NXEInstancePrivate {
             ipc->resize(geometry.first, geometry.second);
         }
     }
+
+    void getDistanceThread()
+    {
+        nDebug() << "Starting distance thread";
+        std::chrono::milliseconds dura_3s(3000);
+        std::this_thread::sleep_for(dura_3s);
+
+        while (distanceThreadShouldRun) {
+            nTrace() << "Loop";
+            std::chrono::milliseconds dura_1s(1000);
+            std::this_thread::sleep_for(dura_1s);
+
+            try {
+                std::int32_t dis = ipc->distance();
+
+                std::int32_t eta = ipc->eta();
+
+                nDebug() << "Distance = " << dis << " eta= " << eta;
+                if (distanceCallback) {
+                    distanceCallback(dis, eta);
+                }
+
+            } catch (const std::exception& ex) {
+                break;
+            }
+        }
+
+        nTrace() << "Finishing getDistanceThread()";
+    }
 };
 
 NXEInstance::NXEInstance(DI::Injector& impls)
@@ -103,10 +135,11 @@ NXEInstance::~NXEInstance()
     const bool external = d->settings.get<ExternalNavit>();
 
     nTrace() << "Stopping controller. external navit=" << external;
+    cancelNavigation();
 
     if (!external) {
         if (d->initialized) {
-            d->ipc->clearDestination();
+//            d->ipc->clearDestination();
             d->ipc->quit();
         }
         d->navitProcess->stop();
@@ -165,7 +198,34 @@ void NXEInstance::setPositionUpdateListener(const IGPSProvider::PositionUpdateCb
 
 void NXEInstance::resize(int w, int h)
 {
-    d->resize(w,h);
+    d->resize(w, h);
+}
+
+void NXEInstance::startNavigation(double lat, double lon, const string& description)
+{
+    assert(d && d->ipc);
+    d->ipc->setDestination(lat, lon, description);
+    d->distanceThreadShouldRun = true;
+
+    d->distanceThread =std::thread { std::bind(&NXEInstancePrivate::getDistanceThread, d.get()) };
+}
+
+void NXEInstance::cancelNavigation()
+{
+    assert(d && d->ipc);
+    if (!d->distanceThreadShouldRun) {
+        nDebug() << "Navigation not started, so no cancel";
+    } else {
+        d->distanceThreadShouldRun = true;
+        d->distanceThread.join();
+    }
+
+//    d->ipc->clearDestination();
+}
+
+void NXEInstance::setNavigationListener(const std::function<void(std::int32_t, std::int32_t)> &listener)
+{
+    d->distanceCallback = listener;
 }
 
 INavitIPC::PointClickedSignalType& NXEInstance::pointClickedSignal()
@@ -173,23 +233,22 @@ INavitIPC::PointClickedSignalType& NXEInstance::pointClickedSignal()
     return d->ipc->pointClickedSignal();
 }
 
-INavitIPC *NXEInstance::ipc() const
+INavitIPC* NXEInstance::ipc() const
 {
     assert(d && d->ipc);
     return d->ipc.get();
 }
 
-IMapDownloader *NXEInstance::mapDownloader() const
+IMapDownloader* NXEInstance::mapDownloader() const
 {
     assert(d && d->mapDownloaderIPC);
     return d->mapDownloaderIPC.get();
 }
 
-IGPSProvider *NXEInstance::gps() const
+IGPSProvider* NXEInstance::gps() const
 {
     assert(d && d->gps);
     return d->gps.get();
-
 }
 
 } // namespace NXE

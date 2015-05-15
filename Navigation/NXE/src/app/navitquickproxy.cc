@@ -51,6 +51,8 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
     , nxeInstance(new NXE::NXEInstance{ context->injector })
     , m_rootContext(ctx)
     , mapsProxy(nxeInstance, ctx)
+    , m_distance(-1)
+    , m_eta(-1)
 {
     nxeInstance->setWaylandSocketName(socketName.toLatin1().data());
 
@@ -117,13 +119,12 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
         emit navigationManuver(QString::fromStdString(manuver));
     });
 
-    nxeInstance->setPositionUpdateListener([this](const NXE::Position& position) {
-        aDebug() << "Received position update";
-        double lat = position.latitude;
-        double lon = position.longitude;
-        double alt = position.altitude;
-        m_position = QString("%1 %2 %3").arg(lat).arg(lon).arg(alt);
-        emit positionChanged();
+    nxeInstance->setNavigationListener([this](std::int32_t distance, std::int32_t eta) {
+        m_distance = distance;
+        m_eta = eta;
+        aTrace() << "Distance to destination " << distance;
+        emit distanceToDestinationChanged();
+        emit etaChanged();
     });
 
     qRegisterMetaType<QObjectList>("QObjectList");
@@ -133,6 +134,12 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
     QTimer::singleShot(500, this, SLOT(initNavit()));
 
     m_settings.favorites();
+}
+
+NavitQuickProxy::~NavitQuickProxy()
+{
+    aDebug() << __PRETTY_FUNCTION__;
+    nxeInstance->setPositionUpdateListener(0);
 }
 
 int NavitQuickProxy::orientation()
@@ -163,20 +170,31 @@ QString NavitQuickProxy::version() const
     return QString::fromStdString(gNXEVersion);
 }
 
-QString NavitQuickProxy::position() const
-{
-    return m_position;
-}
-
 bool NavitQuickProxy::enablePoi() const
 {
     return m_settings.get<Tags::EnablePoi>();
 }
 
-
 void NavitQuickProxy::resize(const QRect& rect)
 {
     nxeInstance->resize(rect.width(), rect.height());
+}
+
+void NavitQuickProxy::setNavigation(bool start)
+{
+    if (start) {
+        aInfo() << "Starting Navigation for " << static_cast<void*>(m_currentItem.data());
+        nxeInstance->startNavigation(m_currentItem->longitude(), m_currentItem->latitude(),
+                                           m_currentItem->description().toStdString());
+    } else {
+        nxeInstance->cancelNavigation();
+    }
+    emit navigationChanged();
+}
+
+bool NavitQuickProxy::navigation()
+{
+    nxeInstance->ipc()->isNavigationRunning();
 }
 
 void NavitQuickProxy::setEnablePoi(bool enable)
@@ -401,20 +419,6 @@ void NavitQuickProxy::getHistory()
     m_rootContext->setContextProperty("locationHistoryResult", QVariant::fromValue(m_historyResults));
 
     emit gettingHistoryDone();
-}
-
-void NavitQuickProxy::startNavigation()
-{
-    aInfo() << "Starting Navigation for " << static_cast<void*>(m_currentItem.data());
-    nxeInstance->ipc()->setDestination(m_currentItem->longitude(), m_currentItem->latitude(),
-                                       m_currentItem->description().toStdString());
-    emit navigationStarted();
-}
-
-void NavitQuickProxy::cancelNavigation()
-{
-    nxeInstance->ipc()->clearDestination();
-    emit navigationStopped();
 }
 
 void NavitQuickProxy::setZoom(int newZoom)

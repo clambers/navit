@@ -6,14 +6,8 @@
 #include "igpsprovider.h"
 #include "inavitipc.h"
 
-#include <memory>
 #include <vector>
-#include <tuple>
-#include <type_traits>
-
-#include <boost/fusion/container/map.hpp>
-#include <boost/fusion/sequence/intrinsic/at_key.hpp>
-#include <boost/fusion/include/at_key.hpp>
+#include <functional>
 
 namespace NXE {
 class INavitProcess;
@@ -39,11 +33,16 @@ public:
 
     void resize(int w, int h);
 
+    void startNavigation(double lat, double lon, const std::string& description);
+    void cancelNavigation();
+    void setNavigationListener( const std::function<void(std::int32_t, std::int32_t)> & listener);
+
     INavitIPC::PointClickedSignalType& pointClickedSignal();
 
     INavitIPC* ipc() const;
     IMapDownloader* mapDownloader() const;
     IGPSProvider* gps() const;
+
 
 private:
     std::unique_ptr<NXEInstancePrivate> d;
