@@ -64,7 +64,9 @@ struct DBusQueuedMessage {
         CurrentCenter,
         Search,
         DestroySearch,
-        SetTracking
+        SetTracking,
+        Distance,
+        Eta
     } type;
     typedef boost::variant<int,
         std::string,
@@ -93,6 +95,39 @@ inline DBus::MessageIter& operator>>(::DBus::MessageIter& iter, std::vector<std:
         ++mit;
     }
     return ++iter;
+}
+
+// my eyes ;(
+#define ENUM(type) {DBusQueuedMessage::Type::type,#type}
+inline std::ostream& operator << (std::ostream& os, DBusQueuedMessage::Type t)
+{
+    static std::map<DBusQueuedMessage::Type, std::string> mapped {
+        ENUM(Ping),
+        ENUM(_Quit),
+        ENUM(Quit),
+        ENUM(SetZoom),
+        ENUM(Zoom),
+        ENUM(Render),
+        ENUM(Orientation),
+        ENUM(SetOrientation),
+        ENUM(SetCenter),
+        ENUM(Resize),
+        ENUM(SetDestination),
+        ENUM(SetPosition),
+        ENUM(AddWaypoint),
+        ENUM(ClearDestination),
+        ENUM(SetScheme),
+        ENUM(SetPitch),
+        ENUM(SearchPOI),
+        ENUM(CurrentCenter),
+        ENUM(Search),
+        ENUM(DestroySearch),
+        ENUM(SetTracking),
+        ENUM(Distance),
+        ENUM(Eta)
+    };
+    os << mapped.at(t);
+    return os;
 }
 
 namespace NXE {
@@ -240,131 +275,144 @@ struct NavitDBusPrivate {
     {
         dbusMainThread = std::thread{ [this]() {
             dbusInfo() << "Staring dbus thread";
+            dbusThreadRunning = true;
             DBusQueuedMessage msg;
             bool quitMessageReceived = false;
             while(!quitMessageReceived) {
-                if(spsc_queue.pop(msg)) {
-                    // we have something
-                    switch (msg.type) {
-                    case DBusQueuedMessage::Type::_Quit:
-                        dbusInfo() << "Quiting dbus processing thread";
-                        quitMessageReceived = true;
-                        break;
-                    case DBusQueuedMessage::Type::Quit:
-                        DBusHelpers::call("quit", *(object.get()));
-                        break;
-                    case DBusQueuedMessage::Type::SetZoom:
-    std::shared_ptr<NavitRouteObjectProxy> routeObject;
-    bool navigationRunning{ false };
-    d->routeObject.reset(new NavitRouteObjectProxy(ctrl.connection()));
-                    {
-                        int newZoomValue = boost::get<int>(msg.value);
-                        dbusInfo() << "Setting zoom to=" << newZoomValue;
-                        DBusHelpers::setAttr("zoom", *(object.get()), newZoomValue);
-                        dbusInfo() << "Setting zoom finished";
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::Zoom:
-                    {
-                        dbusDebug() << "Getting zoom";
-                        int zoom = DBusHelpers::getAttr<int>("zoom", *(object.get()));
-                        zoomSignal(zoom);
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::Render:
-                        DBusHelpers::callNoReply("draw", *(object.get()));
-                        break;
-                    case DBusQueuedMessage::Type::Orientation:
-                        orientationSignal(DBusHelpers::getAttr<int>("orientation", *(object.get())));
-                        break;
-                    case DBusQueuedMessage::Type::SetOrientation:
-                        DBusHelpers::setAttr("orientation", *(object.get()), boost::get<int>(msg.value));
-                        break;
-                    case DBusQueuedMessage::Type::SetCenter:
-                        dbusTrace() << "Set center, center= " << boost::get<std::string>(msg.value);
-                        DBusHelpers::call("set_center_by_string", *(object.get()), boost::get<std::string>(msg.value));
-                        break;
-                    case DBusQueuedMessage::Type::Resize:
-                    {
-                        auto params = boost::get<std::pair<int,int>>(msg.value);
-                        DBusHelpers::callNoReply("resize", *(object.get()), params.first, params.second);
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::SetDestination:
-                    {
-                        auto params = boost::get<std::pair<std::string, std::string>>(msg.value);
-                        DBusHelpers::callNoReply("set_destination", *(object.get()), params.first, params.second);
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::SetPosition:
-                    {
-                        auto params = boost::get<DBus::Struct<int, std::string>>(msg.value);
-                        DBusHelpers::callNoReply("set_center", *(object.get()), params);
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::AddWaypoint:
-                        DBusHelpers::call("add_waypoint", *(object.get()), boost::get<std::string>(msg.value));
-                        break;
-                    case DBusQueuedMessage::Type::ClearDestination:
-                        DBusHelpers::callNoReply("clear_destination", *(object.get()));
-                        break;
-                    case DBusQueuedMessage::Type::SetScheme:
-                        DBusHelpers::callNoReply("set_layout", *(object.get()), boost::get<std::string>(msg.value));
-                        break;
-                    case DBusQueuedMessage::Type::SetPitch:
-                        DBusHelpers::setAttr("pitch", *(object.get()), static_cast<std::int32_t>(boost::get<std::uint16_t>(msg.value)));
-                        break;
-                    case DBusQueuedMessage::Type::SearchPOI:
-                    {
-                        auto params = boost::get<std::pair<std::string, std::string>>(msg.value);
-                        DBusHelpers::call("search_pois", *(object.get()), params.first, params.second);
-                        searchPoiSignal();
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::CurrentCenter:
-                    {
-                        dbusInfo() << "Current center";
-                        auto ret = DBusHelpers::getAttr<DBus::Struct<double, double> >("center", *(object.get()));
-                        dbusInfo() << "Current center lon= " << ret._2 <<" lat= "<< ret._1;
-                        currentCenterSignal(NXE::Position{ret._2, ret._1});
-                        break;
-    try {
-        DBusHelpers::callNoReply("set_destination", *(d->object.get()), message, description);
-        d->navigationRunning = true;
-    } catch(const std::exception& ex) {
-        nError() << "Error " << ex.what();
-    }
-}
+                try {
+                    if(spsc_queue.pop(msg)) {
+                        dbusTrace() << "received message " << msg.type;
+                        // we have something
+                        switch (msg.type) {
+                        case DBusQueuedMessage::Type::Ping:
+                        {
+                            dbusTrace() << "Ping";
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::_Quit:
+                            dbusInfo() << "Quiting dbus processing thread";
+                            quitMessageReceived = true;
+                            break;
+                        case DBusQueuedMessage::Type::Quit:
+                            DBusHelpers::callNoReply("quit", *(object.get()));
+                            break;
+                        case DBusQueuedMessage::Type::SetZoom:
+                        {
+                            int newZoomValue = boost::get<int>(msg.value);
+                            dbusInfo() << "Setting zoom to=" << newZoomValue;
+                            DBusHelpers::setAttr("zoom", *(object.get()), newZoomValue);
+                            dbusInfo() << "Setting zoom finished";
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::Zoom:
+                        {
+                            dbusDebug() << "Getting zoom";
+                            int zoom = DBusHelpers::getAttr<int>("zoom", *(object.get()));
+                            zoomSignal(zoom);
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::Render:
+                            DBusHelpers::callNoReply("draw", *(object.get()));
+                            break;
+                        case DBusQueuedMessage::Type::Orientation:
+                            orientationSignal(DBusHelpers::getAttr<int>("orientation", *(object.get())));
+                            break;
+                        case DBusQueuedMessage::Type::SetOrientation:
+                            DBusHelpers::setAttr("orientation", *(object.get()), boost::get<int>(msg.value));
+                            break;
+                        case DBusQueuedMessage::Type::SetCenter:
+                            dbusTrace() << "Set center, center= " << boost::get<std::string>(msg.value);
+                            DBusHelpers::call("set_center_by_string", *(object.get()), boost::get<std::string>(msg.value));
+                            break;
+                        case DBusQueuedMessage::Type::Resize:
+                        {
+                            auto params = boost::get<std::pair<int,int>>(msg.value);
+                            DBusHelpers::callNoReply("resize", *(object.get()), params.first, params.second);
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::SetDestination:
+                        {
+                            auto params = boost::get<std::pair<std::string, std::string>>(msg.value);
+                            DBusHelpers::callNoReply("set_destination", *(object.get()), params.first, params.second);
+                            navigation = true;
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::SetPosition:
+                        {
+                            auto params = boost::get<DBus::Struct<int, std::string>>(msg.value);
+                            DBusHelpers::callNoReply("set_center", *(object.get()), params);
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::AddWaypoint:
+                            DBusHelpers::call("add_waypoint", *(object.get()), boost::get<std::string>(msg.value));
+                            break;
+                        case DBusQueuedMessage::Type::ClearDestination:
+                            DBusHelpers::callNoReply("clear_destination", *(object.get()));
+                            navigation = false;
+                            break;
+                        case DBusQueuedMessage::Type::SetScheme:
+                            DBusHelpers::callNoReply("set_layout", *(object.get()), boost::get<std::string>(msg.value));
+                            break;
+                        case DBusQueuedMessage::Type::SetPitch:
+                            DBusHelpers::setAttr("pitch", *(object.get()), static_cast<std::int32_t>(boost::get<std::uint16_t>(msg.value)));
+                            break;
+                        case DBusQueuedMessage::Type::SearchPOI:
+                        {
+                            auto params = boost::get<std::pair<std::string, std::string>>(msg.value);
+                            DBusHelpers::call("search_pois", *(object.get()), params.first, params.second);
+                            searchPoiSignal();
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::CurrentCenter:
+                        {
+                            dbusInfo() << "Current center";
+                            auto ret = DBusHelpers::getAttr<DBus::Struct<double, double> >("center", *(object.get()));
+                            dbusInfo() << "Current center lon= " << ret._2 <<" lat= "<< ret._1;
+                            currentCenterSignal(NXE::Position{ret._2, ret._1});
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::Search:
+                        {
+                            auto params = boost::get<std::pair<INavitIPC::SearchType, std::string>>(msg.value);
+                            searchSignal(search(params.first, params.second), params.first);
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::DestroySearch:
+                        {
+                            DBusHelpers::call("destroy", *(searchObject.get()));
+                            dbusInfo() << "Search list destroyed";
+                            searchObject.reset();
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::SetTracking:
+                        {
+                            dbusInfo() << "Setting tracking to " << boost::get<bool>(msg.value);
+                            DBusHelpers::setAttr("follow_cursor", *(object.get()), boost::get<bool>(msg.value));
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::Distance:
+                        {
+                            std::int32_t distance = DBusHelpers::getAttr<int>("destination_length", *(routeObject.get()));
+                            dbusInfo() << "Distance = " << distance;
+                            distanceSignal(distance);
+                            break;
+                        }
+                        case DBusQueuedMessage::Type::Eta:
+                        {
+                            std::int32_t eta = DBusHelpers::getAttr<std::int32_t>("destination_time", *(routeObject.get()));
+                            dbusInfo() << " Eta = " << eta;
+                            etaSignal(eta);
+                            break;
+                        }
 
-bool NavitDBus::isNavigationRunning()
-{
-    return d->navigationRunning;
+                        } // switch end
                     }
-                    case DBusQueuedMessage::Type::Search:
-                    {
-                        auto params = boost::get<std::pair<INavitIPC::SearchType, std::string>>(msg.value);
-                        searchSignal(search(params.first, params.second), params.first);
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::DestroySearch:
-                    {
-                        DBusHelpers::call("destroy", *(searchObject.get()));
-                        dbusInfo() << "Search list destroyed";
-                        searchObject.reset();
-                        break;
-                    }
-                    case DBusQueuedMessage::Type::SetTracking:
-                    {
-                        dbusInfo() << "Setting tracking to " << boost::get<bool>(msg.value);
-                        DBusHelpers::setAttr("follow_cursor", *(object.get()), boost::get<bool>(msg.value));
-                        break;
-                    }
-
-                    } // switch end
-    d->navigationRunning = false;
+                } catch(const std::exception& ex) {
+                    dbusError() << "An exception occured during dbus call " << msg.type << " message = " << ex.what();
                 }
             }
             dbusInfo() << "Processing thread is done and it will be no more!";
+            dbusThreadRunning = false;
         } };
     }
 
@@ -519,9 +567,12 @@ bool NavitDBus::isNavigationRunning()
     std::shared_ptr<NavitDBusObjectProxy> object;
     std::shared_ptr<NavitDBusObjectProxy> rootObject;
     std::shared_ptr<NavitSearchObjectProxy> searchObject;
+    std::shared_ptr<NavitRouteObjectProxy> routeObject;
     DBus::Connection& con;
 
     std::thread dbusMainThread;
+    bool dbusThreadRunning {false};
+    bool navigation {false};
     boost::lockfree::spsc_queue<DBusQueuedMessage, boost::lockfree::capacity<1024> > spsc_queue;
 
     INavitIPC::IntSignalType zoomSignal;
@@ -529,6 +580,8 @@ bool NavitDBus::isNavigationRunning()
     INavitIPC::EmptySignalType searchPoiSignal;
     INavitIPC::CurrentCenterSignalType currentCenterSignal;
     INavitIPC::SearchResultsSignalType searchSignal;
+    INavitIPC::IntSignalType distanceSignal;
+    INavitIPC::IntSignalType etaSignal;
 };
 
 NavitDBus::NavitDBus(DBusController& ctrl)
@@ -537,22 +590,27 @@ NavitDBus::NavitDBus(DBusController& ctrl)
     dbusDebug() << "NavitDBus::NavitDBus()";
     d->object.reset(new NavitDBusObjectProxy(navitDBusInterface, ctrl.connection()));
     d->rootObject.reset(new NavitDBusObjectProxy(rootNavitDBusInterface, ctrl.connection()));
+    d->routeObject.reset(new NavitRouteObjectProxy(ctrl.connection()));
 }
 
 NavitDBus::~NavitDBus()
 {
     dbusDebug() << "Destroying navit dbus";
-    d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::_Quit });
-    d->dbusMainThread.join();
+    quit();
 }
 
 void NavitDBus::quit()
 {
     dbusInfo() << "Request Quiting Navit";
+    if (!d->dbusThreadRunning) {
+        dbusInfo() << "Navit probably already closed";
+        return;
+    }
     d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::Quit });
-    std::chrono::milliseconds dura(1000);
-    std::this_thread::sleep_for(dura);
-    dbusInfo() << "Navit has exited";
+    d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::_Quit });
+    d->dbusMainThread.join();
+    dbusInfo() << "Navit DBus finished";
+
 }
 
 void NavitDBus::setZoom(int newZoom)
@@ -607,6 +665,11 @@ void NavitDBus::setDestination(double longitude, double latitude, const std::str
     auto format = boost::format("geo: %1% %2%") % longitude % latitude;
     const std::string message = format.str();
     d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::SetDestination, DBusQueuedMessage::VariantType{ std::make_pair(message, description) } });
+}
+
+bool NavitDBus::isNavigationRunning()
+{
+    return d->navigation;
 }
 
 void NavitDBus::setPosition(double longitude, double latitude)
@@ -697,6 +760,15 @@ void NavitDBus::setTracking(bool tracking)
     dbusDebug() << "Request set tracking to " << (tracking ? "true" : "false");
     d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::SetTracking, tracking });
 }
+void NavitDBus::distance()
+{
+    d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::Distance});
+}
+
+void NavitDBus::eta()
+{
+    d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::Eta});
+}
 
 INavitIPC::IntSignalType& NavitDBus::orientationResponse()
 {
@@ -723,21 +795,14 @@ INavitIPC::SearchResultsSignalType& NavitDBus::searchResponse()
     return d->searchSignal;
 }
 
-std::int32_t NavitDBus::distance()
+INavitIPC::IntSignalType &NavitDBus::distanceResponse()
 {
-    nTrace() << "getting distance";
-    int distance = DBusHelpers::getAttr<int>("destination_length", *(d->routeObject.get()));
-    nInfo() << "Current distance " << distance;
-
-    return distance;
+    return d->distanceSignal;
 }
 
-std::int32_t NavitDBus::eta()
+INavitIPC::IntSignalType &NavitDBus::etaResponse()
 {
-    int eta = DBusHelpers::getAttr<int>("destination_time", *(d->routeObject.get()));
-    nInfo() << "Current eta= " << eta;
-
-    return eta;
+    return d->etaSignal;
 }
 
 INavitIPC::SpeechSignalType& NavitDBus::speechSignal()

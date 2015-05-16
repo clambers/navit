@@ -35,7 +35,6 @@ public:
 
     void startNavigation(double lat, double lon, const std::string& description);
     void cancelNavigation();
-    void setNavigationListener( const std::function<void(std::int32_t, std::int32_t)> & listener);
 
     INavitIPC::PointClickedSignalType& pointClickedSignal();
 

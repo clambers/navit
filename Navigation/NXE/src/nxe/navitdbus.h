@@ -37,8 +37,8 @@ public:
     virtual void search(SearchType type, const std::string& searchString) override;
     virtual void selectSearchResult(SearchType type, std::int32_t id) override;
     virtual void finishSearch() override;
-    virtual std::int32_t distance() override;
-    virtual std::int32_t eta() override;
+    virtual void distance() override;
+    virtual void eta() override;
     virtual void setTracking(bool tracking) override;
 
     virtual IntSignalType &orientationResponse() override;
@@ -46,6 +46,8 @@ public:
     virtual EmptySignalType& searchPoiResponse() override;
     virtual CurrentCenterSignalType& currentCenterResponse() override;
     virtual SearchResultsSignalType& searchResponse() override;
+    virtual IntSignalType& distanceResponse() override;
+    virtual IntSignalType& etaResponse() override;
 
     virtual SpeechSignalType& speechSignal() override;
     virtual PointClickedSignalType& pointClickedSignal() override;

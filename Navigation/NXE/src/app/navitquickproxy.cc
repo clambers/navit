@@ -119,12 +119,6 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
         emit navigationManuver(QString::fromStdString(manuver));
     });
 
-    nxeInstance->setNavigationListener([this](std::int32_t distance, std::int32_t eta) {
-        m_distance = distance;
-        m_eta = eta;
-        aTrace() << "Distance to destination " << distance;
-        emit distanceToDestinationChanged();
-        emit etaChanged();
     // Navit dbus responses
 
     nxeInstance->ipc()->searchResponse().connect([this](NXE::SearchResults results, NXE::INavitIPC::SearchType type) {
@@ -161,13 +155,21 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
         emit searchDone();
     });
 
+    nxeInstance->ipc()->distanceResponse().connect([this] (std::int32_t distance) {
+        m_distance = distance;
+        emit distanceToDestinationChanged();
+    });
+
+    nxeInstance->ipc()->distanceResponse().connect([this] (std::int32_t eta) {
+        m_eta = eta;
+        emit etaChanged();
+    });
+
     qRegisterMetaType<QObjectList>("QObjectList");
     typedef QQmlListProperty<LocationProxy> LocationProxyList;
     qRegisterMetaType<LocationProxyList>("QQmlListProperty<LocationProxy>");
 
     QTimer::singleShot(500, this, SLOT(initNavit()));
-
-    m_settings.favorites();
 }
 
 NavitQuickProxy::~NavitQuickProxy()
@@ -228,7 +230,7 @@ void NavitQuickProxy::setNavigation(bool start)
 
 bool NavitQuickProxy::navigation()
 {
-    nxeInstance->ipc()->isNavigationRunning();
+    return nxeInstance->ipc()->isNavigationRunning();
 }
 
 void NavitQuickProxy::setEnablePoi(bool enable)

@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
     });
 
     createLoggers();
-    spdlog::set_pattern("[%H:%M:%S.%e] [%t] [%l] %v");
+    spdlog::set_pattern("[%H:%M:%S.%e] [%n] [%t] [%l] %v");
 
     aInfo() << "NXE version is= " << gNXEVersion << " config path="<< s.configPath();
 

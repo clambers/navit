@@ -101,7 +101,6 @@ public slots:
     void getHistory();
     void setLocationPopUp(const QUuid& id);
 
-
     void setZoom(int newZoom);
 
 private slots:

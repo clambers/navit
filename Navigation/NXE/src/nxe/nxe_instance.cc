@@ -20,7 +20,7 @@ namespace NXE {
 
 struct NXEInstancePrivate {
 
-    NXEInstancePrivate(DI::Injector& ifaces, NXEInstance* qptr)
+    NXEInstancePrivate(DI::Injector& ifaces)
         : navitProcess(NXE::get<std::shared_ptr<INavitProcess> >(ifaces))
         , ipc(NXE::get<std::shared_ptr<INavitIPC> >(ifaces))
         , gps(NXE::get<std::shared_ptr<IGPSProvider> >(ifaces))
@@ -47,7 +47,6 @@ struct NXEInstancePrivate {
     bool mute{ false };
     std::thread distanceThread;
     bool distanceThreadShouldRun{ false };
-    std::function<void(std::int32_t, std::int32_t)> distanceCallback;
 
     void setOrientation(int newOrientation)
     {
@@ -88,23 +87,12 @@ struct NXEInstancePrivate {
         std::this_thread::sleep_for(dura_3s);
 
         while (distanceThreadShouldRun) {
-            nTrace() << "Loop";
+            nTrace() << "Getting navigation informations";
             std::chrono::milliseconds dura_1s(1000);
             std::this_thread::sleep_for(dura_1s);
 
-            try {
-                std::int32_t dis = ipc->distance();
-
-                std::int32_t eta = ipc->eta();
-
-                nDebug() << "Distance = " << dis << " eta= " << eta;
-                if (distanceCallback) {
-                    distanceCallback(dis, eta);
-                }
-
-            } catch (const std::exception& ex) {
-                break;
-            }
+            ipc->distance();
+            ipc->eta();
         }
 
         nTrace() << "Finishing getDistanceThread()";
@@ -112,7 +100,7 @@ struct NXEInstancePrivate {
 };
 
 NXEInstance::NXEInstance(DI::Injector& impls)
-    : d(new NXEInstancePrivate{ impls, this })
+    : d(new NXEInstancePrivate{ impls })
 {
     nDebug() << "Creating NXE instance. Settings path = " << d->settings.configPath();
     nTrace() << "Connecting to navitprocess signals";
@@ -129,7 +117,7 @@ NXEInstance::~NXEInstance()
 
     if (!external) {
         if (d->initialized) {
-//            d->ipc->clearDestination();
+            d->ipc->clearDestination();
             d->ipc->quit();
         }
         d->navitProcess->stop();
@@ -202,20 +190,13 @@ void NXEInstance::startNavigation(double lat, double lon, const string& descript
 
 void NXEInstance::cancelNavigation()
 {
+    nDebug() << "Canceling navigation";
     assert(d && d->ipc);
-    if (!d->distanceThreadShouldRun) {
-        nDebug() << "Navigation not started, so no cancel";
-    } else {
-        d->distanceThreadShouldRun = true;
+    d->distanceThreadShouldRun = false;
+    d->ipc->clearDestination();
+    if (d->distanceThread.joinable()) {
         d->distanceThread.join();
     }
-
-//    d->ipc->clearDestination();
-}
-
-void NXEInstance::setNavigationListener(const std::function<void(std::int32_t, std::int32_t)> &listener)
-{
-    d->distanceCallback = listener;
 }
 
 INavitIPC::PointClickedSignalType& NXEInstance::pointClickedSignal()
