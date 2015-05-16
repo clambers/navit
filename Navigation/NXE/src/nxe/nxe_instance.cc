@@ -54,20 +54,10 @@ struct NXEInstancePrivate {
         ipc->setOrientation(newOrientation);
     }
 
-    void zoomBy(int factor)
-    {
-        ipc->zoomBy(factor);
-    }
-
     void toogleAudio(bool volumeOn)
     {
         mute = !volumeOn;
         nDebug() << "Turning audio " << (mute ? "off" : "on");
-    }
-
-    int zoomMessage()
-    {
-        return ipc->zoom();
     }
 
     void resize(int w, int h)
