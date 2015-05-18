@@ -117,7 +117,6 @@ NXEInstance::~NXEInstance()
 
     if (!external) {
         if (d->initialized) {
-            d->ipc->clearDestination();
             d->ipc->quit();
         }
         d->navitProcess->stop();
@@ -193,10 +192,10 @@ void NXEInstance::cancelNavigation()
     nDebug() << "Canceling navigation";
     assert(d && d->ipc);
     d->distanceThreadShouldRun = false;
-    d->ipc->clearDestination();
     if (d->distanceThread.joinable()) {
         d->distanceThread.join();
     }
+    d->ipc->clearDestination();
 }
 
 INavitIPC::PointClickedSignalType& NXEInstance::pointClickedSignal()

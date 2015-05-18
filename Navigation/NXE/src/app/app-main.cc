@@ -71,6 +71,9 @@ int main(int argc, char* argv[])
     // remove all navit instances
     system("killall navit");
 
+    // hack. for some reasons
+    system("rm ~/.navit/destination.txt");
+
     // Parse app settings
     QCommandLineParser parser;
     parser.addOptions({
@@ -128,6 +131,9 @@ int main(int argc, char* argv[])
 
         QObject::connect(&proxy, &NavitQuickProxy::quitSignal, &app, &QGuiApplication::quit);
         ret = app.exec();
+
+        aInfo() << "Application finished";
+        proxy.setNavigation(false);
     }
     catch (const std::exception& ex) {
         aFatal() << "An error ocurred while running nxe-app. Error code= " << ex.what();

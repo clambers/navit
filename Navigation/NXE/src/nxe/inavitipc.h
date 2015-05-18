@@ -63,6 +63,7 @@ public:
 
     // dbus get
     typedef boost::signals2::signal<void(std::int32_t)> IntSignalType;
+    typedef boost::signals2::signal<void(bool)> BoolSignalType;
     typedef boost::signals2::signal<void()> EmptySignalType;
     typedef boost::signals2::signal<void(NXE::Position)> CurrentCenterSignalType;
     typedef boost::signals2::signal<void(SearchResults, SearchType)> SearchResultsSignalType;
@@ -108,6 +109,7 @@ public:
     virtual SearchResultsSignalType& searchResponse() = 0;
     virtual IntSignalType& distanceResponse() = 0;
     virtual IntSignalType& etaResponse() = 0;
+    virtual BoolSignalType& navigationChanged() = 0;
 
 
     // Signals from IPC

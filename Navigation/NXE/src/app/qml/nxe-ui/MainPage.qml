@@ -51,7 +51,9 @@ Item {
         }
 
         onNavigationChanged: {
+            console.debug('navigation is', navitProxy.navigation)
             if (navitProxy.navigation) {
+                console.debug('navigation=', navitProxy.navigation);
                 Info.remove(locationInfoComponent,locationInfoObject);
 
 
@@ -64,9 +66,9 @@ Item {
                 navigationManuvers.clear();
                 Info.createNavigationInstructionsItem(navigationManuvers);
             } else {
+                console.debug('Navigation stopped')
                 Info.remove(locationInfoComponent,locationInfoObject);
                 Info.remove(locationInfoTopComponent, locationInfoTopObject)
-
                 Info.remove(navigationInfoComponent, navigationInfoObject)
             }
         }

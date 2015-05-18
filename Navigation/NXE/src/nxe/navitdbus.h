@@ -48,6 +48,7 @@ public:
     virtual SearchResultsSignalType& searchResponse() override;
     virtual IntSignalType& distanceResponse() override;
     virtual IntSignalType& etaResponse() override;
+    virtual BoolSignalType& navigationChanged() override;
 
     virtual SpeechSignalType& speechSignal() override;
     virtual PointClickedSignalType& pointClickedSignal() override;

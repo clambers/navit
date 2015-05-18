@@ -160,6 +160,11 @@ NavitQuickProxy::NavitQuickProxy(const QString& socketName, QQmlContext* ctx, QO
         emit distanceToDestinationChanged();
     });
 
+    nxeInstance->ipc()->navigationChanged().connect([this](bool navi) {
+        aInfo() << "Navigation info changed to " << (navi ? "true":"false");
+        emit navigationChanged();
+    });
+
     nxeInstance->ipc()->distanceResponse().connect([this] (std::int32_t eta) {
         m_eta = eta;
         emit etaChanged();
@@ -225,7 +230,6 @@ void NavitQuickProxy::setNavigation(bool start)
     } else {
         nxeInstance->cancelNavigation();
     }
-    emit navigationChanged();
 }
 
 bool NavitQuickProxy::navigation()
@@ -284,7 +288,7 @@ void NavitQuickProxy::reset()
 void NavitQuickProxy::quit()
 {
     aInfo() << "Quiting application";
-    nxeInstance->ipc()->clearDestination();
+    nxeInstance->cancelNavigation();
     nxeInstance->ipc()->quit();
 
     emit quitSignal();

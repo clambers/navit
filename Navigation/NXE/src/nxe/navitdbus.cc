@@ -294,6 +294,7 @@ struct NavitDBusPrivate {
                             quitMessageReceived = true;
                             break;
                         case DBusQueuedMessage::Type::Quit:
+                            dbusTrace() << "Quit Navit";
                             DBusHelpers::callNoReply("quit", *(object.get()));
                             break;
                         case DBusQueuedMessage::Type::SetZoom:
@@ -333,8 +334,9 @@ struct NavitDBusPrivate {
                         case DBusQueuedMessage::Type::SetDestination:
                         {
                             auto params = boost::get<std::pair<std::string, std::string>>(msg.value);
-                            DBusHelpers::callNoReply("set_destination", *(object.get()), params.first, params.second);
+                            DBusHelpers::call("set_destination", *(object.get()), params.first, params.second);
                             navigation = true;
+                            navigationChangedSignal(navigation);
                             break;
                         }
                         case DBusQueuedMessage::Type::SetPosition:
@@ -347,8 +349,10 @@ struct NavitDBusPrivate {
                             DBusHelpers::call("add_waypoint", *(object.get()), boost::get<std::string>(msg.value));
                             break;
                         case DBusQueuedMessage::Type::ClearDestination:
-                            DBusHelpers::callNoReply("clear_destination", *(object.get()));
+                            dbusDebug() << "Clear destination";
+                            DBusHelpers::call("clear_destination", *(object.get()));
                             navigation = false;
+                            navigationChangedSignal(navigation);
                             break;
                         case DBusQueuedMessage::Type::SetScheme:
                             DBusHelpers::callNoReply("set_layout", *(object.get()), boost::get<std::string>(msg.value));
@@ -392,16 +396,20 @@ struct NavitDBusPrivate {
                         }
                         case DBusQueuedMessage::Type::Distance:
                         {
-                            std::int32_t distance = DBusHelpers::getAttr<int>("destination_length", *(routeObject.get()));
-                            dbusInfo() << "Distance = " << distance;
-                            distanceSignal(distance);
+                            if (!navigationCancelled) {
+                                std::int32_t distance = DBusHelpers::getAttr<int>("destination_length", *(routeObject.get()));
+                                dbusInfo() << "Distance = " << distance;
+                                distanceSignal(distance);
+                            }
                             break;
                         }
                         case DBusQueuedMessage::Type::Eta:
                         {
-                            std::int32_t eta = DBusHelpers::getAttr<std::int32_t>("destination_time", *(routeObject.get()));
-                            dbusInfo() << " Eta = " << eta;
-                            etaSignal(eta);
+                            if(navigationCancelled) {
+                                std::int32_t eta = DBusHelpers::getAttr<std::int32_t>("destination_time", *(routeObject.get()));
+                                dbusInfo() << " Eta = " << eta;
+                                etaSignal(eta);
+                            }
                             break;
                         }
 
@@ -573,6 +581,7 @@ struct NavitDBusPrivate {
     std::thread dbusMainThread;
     bool dbusThreadRunning {false};
     bool navigation {false};
+    bool navigationCancelled {false};
     boost::lockfree::spsc_queue<DBusQueuedMessage, boost::lockfree::capacity<1024> > spsc_queue;
 
     INavitIPC::IntSignalType zoomSignal;
@@ -582,6 +591,7 @@ struct NavitDBusPrivate {
     INavitIPC::SearchResultsSignalType searchSignal;
     INavitIPC::IntSignalType distanceSignal;
     INavitIPC::IntSignalType etaSignal;
+    INavitIPC::BoolSignalType navigationChangedSignal;
 };
 
 NavitDBus::NavitDBus(DBusController& ctrl)
@@ -662,6 +672,7 @@ void NavitDBus::setCenter(double longitude, double latitude)
 void NavitDBus::setDestination(double longitude, double latitude, const std::string& description)
 {
     dbusDebug() << "Request Setting destionation to. name= " << description;
+    d->navigationCancelled = false;
     auto format = boost::format("geo: %1% %2%") % longitude % latitude;
     const std::string message = format.str();
     d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::SetDestination, DBusQueuedMessage::VariantType{ std::make_pair(message, description) } });
@@ -692,6 +703,8 @@ void NavitDBus::addWaypoint(double longitude, double latitude)
 
 void NavitDBus::clearDestination()
 {
+    dbusInfo() << "Clearing destination";
+    d->navigationCancelled = true;
     d->spsc_queue.push(DBusQueuedMessage{ DBusQueuedMessage::Type::ClearDestination });
 }
 
@@ -803,6 +816,11 @@ INavitIPC::IntSignalType &NavitDBus::distanceResponse()
 INavitIPC::IntSignalType &NavitDBus::etaResponse()
 {
     return d->etaSignal;
+}
+
+INavitIPC::BoolSignalType &NavitDBus::navigationChanged()
+{
+    return d->navigationChangedSignal;
 }
 
 INavitIPC::SpeechSignalType& NavitDBus::speechSignal()
