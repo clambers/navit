@@ -41,8 +41,14 @@ QtObject {
     function searchStreet(searchString) {
         fakeSearchTimer.start();
     }
+    function searchAddress(searchString) {
+        fakeSearchTimer.start();
+    }
 
     function searchNear(string) {
+    }
+
+    function searchSelect(what, id) {
     }
 
     function getHistory() {
@@ -64,8 +70,8 @@ QtObject {
         Qt.quit();
     }
 
-    function setLocationPopUp(itemName) {
-        console.debug('set popup=', itemName)
+    function setLocationPopUp(itemId) {
+        console.debug('set popup=', itemId)
         currentlySelectedItem = fakeLocationObject;
     }
 
@@ -118,7 +124,7 @@ QtObject {
     }
 
     property Timer fakePositionClickedTimer: Timer {
-        running: true
+        running: false
         interval: 1
         repeat: false
         onTriggered: {
